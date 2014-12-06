@@ -1,0 +1,4 @@
+intmc
+=====
+
+integer machine
