@@ -13,6 +13,7 @@ public class intmc {
   static int INST = 0;
   static int DATA = 0;
   static int ZFLAG = 1;
+  static volatile boolean PCUF = false;    // PC updated flag
   static volatile boolean halted = false;
   static String logFileName = "intmc.log";
   static Logger d = Logger.getLogger(intmc.class.getSimpleName());
@@ -47,6 +48,12 @@ public class intmc {
     } else {
       bye("FATAL: memfile does not exist.");
     }
+  }
+
+  // to be used inside switch case for instructions that alter PC
+  static void setPC(int loc) {
+    PC = loc;
+    PCUF = true;
   }
 
   static void bye(String exc) throws Exception {
@@ -99,6 +106,14 @@ public class intmc {
         d.info("ADDX");
         AC = AC + memory[DATA];
         break;
+      case 33:
+        d.info("INC");
+        AC++;
+        break;
+      case 34:
+        d.info("INCX");
+        memory[DATA]++;
+        break;
       case 40:
         d.info("SUB");
         AC = AC - DATA;
@@ -114,6 +129,14 @@ public class intmc {
       case 43:
         d.info("CMPX");
         ZFLAG = AC - memory[DATA];
+        break;
+      case 44:
+        d.info("DEC");
+        AC--;
+        break;
+      case 45:
+        d.info("DECX");
+        memory[DATA]--;
         break;
       case 50:
         d.info("MUL");
@@ -141,18 +164,30 @@ public class intmc {
         break;
       case 9:
         d.info("GOTO");
-        PC = DATA;
+        setPC(DATA);
         break;
       case 91:
         d.info("JZ");
         if(ZFLAG == 0) {
-          PC = DATA;
+          setPC(DATA);
         }
         break;
       case 92:
         d.info("JNZ");
         if(ZFLAG != 0) {
-          PC = DATA;
+          setPC(DATA);
+        }
+        break;
+      case 93:
+        d.info("JACZ");
+        if(AC == 0) {
+          setPC(DATA);
+        }
+        break;
+      case 94:
+        d.info("JACNZ");
+        if(AC != 0) {
+          setPC(DATA);
         }
         break;
       case 80:
@@ -171,6 +206,10 @@ public class intmc {
         d.info("PRINT");
         System.out.println("["+DATA+"]: "+memory[DATA]);
         break;
+      case 82:
+        d.info("PRINTAC");
+        System.out.println("[AC]: "+AC);
+        break;
       default:
         d.info("NULL");
         break;
@@ -178,7 +217,12 @@ public class intmc {
   }
 
   static void shift() {
-    PC = PC + SC;
+    if(PCUF) {
+      PCUF = false;
+    }
+    else {
+      PC += SC; // do not use setPC(n) here
+    }
   }
 
   // fixme: memory warrants the need to be a separate object
