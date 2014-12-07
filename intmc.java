@@ -13,17 +13,17 @@ public class intmc {
   static int INST = 0;
   static int DATA = 0;
   static int ZFLAG = 1;
+  static volatile boolean halted = false;
   static String logFileName = "intmc.log";
   static Logger d = Logger.getLogger(intmc.class.getSimpleName());
 
   public static void main(String[] args) throws Exception {
     // init logging file
-    FileHandler fh;
+    d.setUseParentHandlers(false);
+    FileHandler fh = null;
     try {
       fh = new FileHandler(logFileName);
       d.addHandler(fh);
-      SimpleFormatter sf = new SimpleFormatter();
-      fh.setFormatter(sf);
     } catch(SecurityException se) {
       se.printStackTrace();
     } catch(IOException ioe) {
@@ -54,7 +54,7 @@ public class intmc {
   }
 
   static void run_machine() throws IOException, Exception {
-    for (int i=0; ; i++) {
+    for (int i=0; !halted; i++) {
       fetch();
       decode();
       process();
@@ -77,7 +77,7 @@ public class intmc {
     switch(INST) {
       case 0:
         d.info("EXIT");
-        bye("exit machine");
+        halted = true;
         break;
       case 10:
         d.info("LOAD");
