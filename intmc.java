@@ -6,10 +6,12 @@ public class intmc {
   // fixme: use a class for the integer machine: using OOP techniques
   static int[] memory;
   static int INST_SIZE = 100;
-  static int AC = 0;
-  static int IR = 0;
-  static int PC = 0;
-  static int SC = 0;
+  static int AC = 0;    // accumulator
+  static int IR = 0;    // instruction register
+  static int PC = 0;    // program counter
+  static int DR = 0;    // data register
+  static int LR = 0;    // location register
+  static int SC = 0;    // shift counter
   static int INST = 0;
   static int DATA = 0;
   static int ZFLAG = 1;
@@ -40,11 +42,13 @@ public class intmc {
       throw new Exception("[FATAL] no memfile specified as argument.");
     }
     File memfile = new File(args[0]);
+    File memfileimg = new File(memfile.getName() + "dmp");
     if (memfile.exists()) {
       load_memory(memfile);
       d.info("memfile loaded.");
       d.info("going to start machine.");
       run_machine();
+      dump_memory(memfileimg);
     } else {
       bye("FATAL: memfile does not exist.");
     }
@@ -94,9 +98,33 @@ public class intmc {
         d.info("LOADX");
         AC = memory[DATA];
         break;
+      case 12:
+        d.info("AC <- DR");
+        AC = DR;
+        break;
+      case 13:
+        d.info("AC <- LR");
+        AC = LR;
+        break;
       case 20:
         d.info("STORE");
         memory[DATA] = AC;
+        break;
+      case 21:
+        d.info("ISTOREX");
+        memory[LR] = AC;
+        break;
+      case 22:
+        d.info("ISTOREDR");
+        memory[LR] = DR;
+        break;
+      case 23:
+        d.info("DR <- AC");
+        DR = AC;
+        break;
+      case 24:
+        d.info("LR <- AC");
+        LR = AC;
         break;
       case 30:
         d.info("ADD");
@@ -192,15 +220,15 @@ public class intmc {
         break;
       case 80:
         d.info("DISPREG");
-        System.out.println("-------------------------");
-        System.out.println("  AC = " + AC);
-        System.out.println("  PC = " + PC);
-        System.out.println("  SC = " + SC);
-        System.out.println("  IR = " + IR);
-        System.out.println("  INST = " + INST);
-        System.out.println("  DATA = " + DATA);
-        System.out.println("  ZFLAG = " + ZFLAG);
-        System.out.println("-------------------------");
+        System.out.println(",------------------------");
+        System.out.println("|  AC = " + AC);
+        System.out.println("|  PC = " + PC);
+        System.out.println("|  SC = " + SC);
+        System.out.println("|  IR = " + IR);
+        System.out.println("|  INST = " + INST);
+        System.out.println("|  DATA = " + DATA);
+        System.out.println("|  ZFLAG = " + ZFLAG);
+        System.out.println("`------------------------");
         break;
       case 81:
         d.info("PRINT");
@@ -234,6 +262,19 @@ public class intmc {
     if(memory == null) {
       bye("null memory exception. memfile is possibly corrupted.");
     }
+  }
+  
+  static void dump_memory() {
+    for(int i=0;i<memory.length;i++) {
+      System.out.printf("%3d:%d\n",i,memory[i]);
+    }
+  }
+  
+  static void dump_memory(File file) throws Exception {
+    d.info("dump_memory: serializing memory into array file.");
+    ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(file));
+    oos.writeObject(memory);
+    oos.close();
   }
 }
 
